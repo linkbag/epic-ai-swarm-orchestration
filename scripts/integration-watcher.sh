@@ -18,12 +18,12 @@ DESCRIPTION="${2:?Missing description}"
 shift 2
 SESSIONS=("$@")
 
-MAX_PARALLEL=10
+MAX_SESSIONS=50
 if [[ ${#SESSIONS[@]} -lt 1 ]]; then
   echo "Error: need at least 1 session" >&2; exit 1
 fi
-if [[ ${#SESSIONS[@]} -gt $MAX_PARALLEL ]]; then
-  echo "Error: max $MAX_PARALLEL parallel (got ${#SESSIONS[@]})" >&2; exit 1
+if [[ ${#SESSIONS[@]} -gt $MAX_SESSIONS ]]; then
+  echo "Error: too many sessions (got ${#SESSIONS[@]}, max $MAX_SESSIONS)" >&2; exit 1
 fi
 
 SWARM_DIR="$(cd "$(dirname "$0")" && pwd)"
