@@ -375,3 +375,89 @@
 - **Build verified:** pass — all 17 scripts pass `bash -n` syntax check after merge.
 - **Fixes applied:** None needed — both branches merged cleanly with no conflicts.
 - **Remaining concerns:** (1) queue-watcher counts ALL tmux agent sessions system-wide, not just current batch — correct for total load management but could slow queue draining if concurrent batches exist. (2) update-task-status.sh is guarded by `[[ -x ]]` checks so it degrades gracefully if absent. (3) queue-watcher does not call update-task-status.sh for queued tasks transitioning to "running" — tasks spawned from the queue will get their status set by spawn-agent.sh's existing active-tasks.json write, so this is fine.
+
+---
+
+# Integration Log: Swarm v3 Phase 3 — Automation
+**Project:** SwarmV3
+**Subteams:** claude-swarm-standup claude-swarm-cleanup
+**Started:** 2026-03-28 11:45:50
+
+## Subteam Summaries
+
+
+========================================
+## Subteam: claude-swarm-standup
+========================================
+# Work Log: claude-swarm-standup
+## Task: swarm-standup (SwarmV3)
+## Branch: feat/swarm-standup
+---
+
+### [Step 1] Read existing scripts for conventions
+- **Files changed:** None
+- **What:** Read notify-on-complete.sh, update-task-status.sh, pulse-check.sh, inbox-list.sh, swarm.conf, inbox.json
+- **Why:** Understand config variable names, JSON structure, tmux patterns, openclaw usage
+- **Decisions:** Confirmed SWARM_NOTIFY_TARGET / SWARM_NOTIFY_CHANNEL naming; python3 for JSON; all errors non-fatal
+- **Issues found:** active-tasks.json doesn't exist yet (created by spawn-agent); script handles missing file gracefully
+
+### [Step 2] Created scripts/daily-standup.sh
+- **Files changed:** scripts/daily-standup.sh
+- **What:** Standalone standup generator — reads active-tasks.json + inbox.json + tmux, sends Telegram
+- **Why:** Automated 09:00 PST daily summary of swarm activity
+- **Decisions:** Used python3 temp file approach to avoid shell quoting issues with multiline completed list; CUTOFF_MS computed in bash to avoid python datetime import failure
+- **Issues found:** None
+
+## Handoff
+- **What changed:** scripts/daily-standup.sh (new file) — generates and sends daily standup summary
+- **How to verify:** bash -n scripts/daily-standup.sh (syntax check passes); run manually with no active-tasks.json to confirm "All quiet" path; run with a populated active-tasks.json to confirm full report path
+- **Known issues:** None
+- **Integration notes:** Needs SWARM_NOTIFY_TARGET in swarm.conf to send Telegram; safe to run without it (logs only). Cron: 0 9 * * * /path/to/scripts/daily-standup.sh (PST = UTC-8, so 17:00 UTC)
+- **Decisions made:** Non-fatal everywhere — every section wrapped in || true; missing files treated as empty data
+- **Build status:** pass — bash -n validates successfully
+
+### Review Round 1
+- Verdict: Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+========================================
+## Subteam: claude-swarm-cleanup
+========================================
+# Work Log: claude-swarm-cleanup
+## Task: swarm-cleanup (SwarmV3)
+## Branch: feat/swarm-cleanup
+---
+
+### [Step 1] Created scripts/cleanup.sh
+- **Files changed:** scripts/cleanup.sh (new)
+- **What:** Stale data cleanup script with --dry-run support
+- **Why:** Swarm accumulates stale endorsements, /tmp worklogs, pulse-state entries, and completed tasks over time
+- **Decisions:** Used Python inline blocks for JSON manipulation (consistent with existing scripts like update-task-status.sh and pulse-check.sh). Used `trash` with `rm` fallback as specified.
+- **Issues found:** Initial draft had a dead duplicate Python block for pulse cleanup — removed it before committing.
+
+### Decision: Python for JSON manipulation
+- **Choice:** Inline Python3 heredocs for all JSON read/write operations
+- **Why:** Consistent with existing codebase pattern (update-task-status.sh, pulse-check.sh use same approach). Avoids adding jq dependency.
+- **Alternatives considered:** `jq` — not always installed and not used elsewhere in the project
+- **Impact:** Requires python3 to be available (already a project dependency)
+
+## Handoff
+- **What changed:** scripts/cleanup.sh — new stale data cleanup script with --dry-run support
+- **How to verify:** `bash -n scripts/cleanup.sh` (syntax check); `bash scripts/cleanup.sh --dry-run` (smoke test — safe, no writes)
+- **Known issues:** None
+- **Integration notes:** Run weekly via cron or heartbeat. Does NOT touch log files in $SWARM_DIR/logs/. pulse-state.json and active-tasks.json must exist for those cleanup steps to run (gracefully skipped if missing).
+- **Decisions made:** Python3 inline for JSON (matches existing scripts); trash-with-rm-fallback for file deletion
+- **Build status:** pass — bash -n syntax check passed; dry-run smoke test ran successfully, detected 520 stale /tmp files
+
+### Review Round 1
+- Verdict: Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+---
+## Integration Review
+
+### Integration Round 1
+- **Timestamp:** 2026-03-28 11:45:56
+- **Cross-team conflicts found:** None — scripts are disjoint (daily-standup.sh vs cleanup.sh). Both read active-tasks.json but on non-overlapping data ranges (24h vs 30d). Both branches also touched docs/ESR.md and docs/history/ but merged cleanly.
+- **Duplicated code merged:** None — no duplication detected. Both use inline Python3 for JSON (consistent with existing codebase) but for different purposes.
+- **Build verified:** pass — all 20 scripts pass bash -n
+- **Fixes applied:** None needed
+- **Remaining concerns:** None — cleanup.sh does not clean /tmp/standup_list_* temp files created by daily-standup.sh on crash, but these are ephemeral and will be cleaned by OS tmp cleanup.

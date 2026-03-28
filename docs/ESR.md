@@ -1,5 +1,5 @@
 # SwarmV3 — Executive Summary Report (ESR)
-*Last updated: 2026-03-28 11:44*
+*Last updated: 2026-03-28 11:50*
 
 ## What We've Built
 <!-- High-level summary of what exists -->
@@ -64,3 +64,12 @@ Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indi
 ### Update: 2026-03-28 11:44
 ### claude-swarm-cleanup — 2026-03-28 11:44
 Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+### Update: 2026-03-28 11:44
+### claude-swarm-standup — 2026-03-28 11:44
+Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+### Update: 2026-03-28 11:50
+### Integration Review — 2026-03-28 11:50
+**Subteams:** claude-swarm-standup claude-swarm-cleanup
+**Result:** Both branches merged cleanly with no conflicts. Scripts are fully disjoint (daily-standup.sh vs cleanup.sh). Shared state (active-tasks.json) is accessed on non-overlapping data ranges. All 20 scripts pass bash -n. No duplicate code, no API breaks, no config conflicts.
