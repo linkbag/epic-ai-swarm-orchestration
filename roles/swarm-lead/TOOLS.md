@@ -30,6 +30,10 @@ cd ~/workspace/swarm
 bash spawn-batch.sh "/mnt/d/Startup projects/ProjectName" "batch-id" "Batch description" /tmp/batch-tasks.json
 ```
 
+## Plan Format
+When presenting plans to WB, always include Priority (🔴/🟡/🟢) and Estimated Time columns.
+This helps WB decide which tasks to endorse vs. defer.
+
 ## Prompt Template
 
 **DO NOT include `openclaw system event` in agent prompts.** The `notify-on-complete.sh` watcher 
