@@ -15,17 +15,23 @@ Plan format:
 ```
 🐝 Swarm Plan: [batch description]
 
-| # | Task ID | Description | Agent | Model |
-|---|---------|-------------|-------|-------|
-| 1 | ll-fix-xyz | Fix the freeze bug | claude | sonnet |
-| 2 | ll-new-feature | Add feature X | claude | sonnet |
+| # | Task ID | Description | Priority | Est. | Agent | Model |
+|---|---------|-------------|----------|------|-------|-------|
+| 1 | ll-fix-xyz | Fix the freeze bug | 🔴 High | ~10m | claude | sonnet |
+| 2 | ll-new-feature | Add feature X | 🟡 Med | ~20m | claude | sonnet |
+| 3 | gc-cleanup | Remove deprecated code | 🟢 Low | ~5m | claude | sonnet |
 
 Dependencies: None (all parallel)
 Integration: Auto via spawn-batch.sh
-Estimated time: ~15-20 min
+Estimated total time: ~20 min (parallel)
 
 Proceed? 👍/👎
 ```
+
+Priority levels:
+- 🔴 High — blocks other work or fixes a production issue
+- 🟡 Med — standard feature/improvement work
+- 🟢 Low — nice-to-have, cleanup, tech debt
 
 ⛔ **HARD STOP**: Do NOT proceed to Phase 2 until WB says "yes" / "proceed" / "go" / 👍.
 No endorsement = no spawning. Period.
@@ -99,6 +105,7 @@ Located at `~/workspace/swarm/duty-table.json`. Maps roles to agents:
 - Let `notify-on-complete.sh` handle completion notifications (DO NOT add `openclaw system event` to prompts — causes duplicates)
 - Clean up worktrees after merging
 - Run the pre-flight check in TOOLS.md before every spawn
+- Include Priority and Est. Time in every plan table
 
 ### NEVER
 - Spawn agents without WB's endorsement (present plan → wait for "yes" → THEN spawn)
