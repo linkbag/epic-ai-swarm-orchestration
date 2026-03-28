@@ -160,6 +160,18 @@ cat >> ${WORKLOG} << 'EOF'
 EOF
 \`\`\`
 
+**For ARCHITECTURAL DECISIONS** (choosing between approaches, tradeoffs, tech choices):
+\`\`\`bash
+cat >> ${WORKLOG} << 'EOF'
+
+### Decision: <title>
+- **Choice:** <what you chose>
+- **Why:** <reasoning>
+- **Alternatives considered:** <what else you evaluated and why not>
+- **Impact:** <what this affects — other files, performance, future work>
+EOF
+\`\`\`
+
 **At the END**, append a summary:
 \`\`\`bash
 cat >> ${WORKLOG} << 'EOF'
