@@ -115,20 +115,26 @@ with open('$PULSE_STATE', 'w') as f: json.dump(d, f, indent=2)
   if [[ "$IS_STUCK" == "functional_done" ]]; then
     echo "ℹ️  FUNCTIONALLY DONE: $SESSION — $STUCK_REASON"
     tmux kill-session -t "$SESSION" 2>/dev/null || true
+    if [[ -x "$SWARM_DIR/update-task-status.sh" ]]; then
+      "$SWARM_DIR/update-task-status.sh" --session "$SESSION" "done" 2>/dev/null || true
+    fi
     echo "✅ Agent $SESSION appears functionally complete and was auto-closed. Reason: $STUCK_REASON" >> "$NOTIFY_FILE"
     echo "   → Auto-closed stale completed session and queued completion notification"
   elif [[ "$IS_STUCK" == "yes" ]]; then
     echo "⚠️  STUCK DETECTED: $SESSION — Reason: $STUCK_REASON"
-    
+
     # Save last output to log
     echo "$CURRENT_OUTPUT" > "$LOGS_DIR/${SESSION}-stuck-$(date +%Y%m%d_%H%M%S).log"
-    
+
     # Kill the stuck session
     tmux kill-session -t "$SESSION" 2>/dev/null || true
-    
+    if [[ -x "$SWARM_DIR/update-task-status.sh" ]]; then
+      "$SWARM_DIR/update-task-status.sh" --session "$SESSION" "failed" "Stuck: $STUCK_REASON" 2>/dev/null || true
+    fi
+
     # Write notification
     echo "⚠️ Agent $SESSION is STUCK and was killed. Reason: $STUCK_REASON. Check logs at $LOGS_DIR/" >> "$NOTIFY_FILE"
-    
+
     echo "   → Killed session and queued notification"
   else
     echo "   ✅ Healthy (output changing, no stuck patterns)"
