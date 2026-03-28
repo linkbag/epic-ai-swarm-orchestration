@@ -160,6 +160,18 @@ cat >> ${WORKLOG} << 'EOF'
 EOF
 \`\`\`
 
+**For ARCHITECTURAL DECISIONS** (choosing between approaches, tradeoffs, tech choices):
+\`\`\`bash
+cat >> ${WORKLOG} << 'EOF'
+
+### Decision: <title>
+- **Choice:** <what you chose>
+- **Why:** <reasoning>
+- **Alternatives considered:** <what else you evaluated and why not>
+- **Impact:** <what this affects — other files, performance, future work>
+EOF
+\`\`\`
+
 **At the END**, append a structured handoff:
 \`\`\`bash
 cat >> ${WORKLOG} << 'EOF'
@@ -193,7 +205,7 @@ BLOCKER_EOF
 3. Do NOT silently retry the same failing approach for 10+ minutes
 
 ## ✅ WHEN YOU ARE DONE:
-1. Finalize your work log with the summary section above
+1. Finalize your work log with the handoff section above
 2. Commit all changes with a clear commit message
 3. Push the branch: git push origin ${BRANCH}
 4. Open a PR if applicable: gh pr create --fill

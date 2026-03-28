@@ -285,6 +285,39 @@ if [[ "$PASS" != "True" ]]; then
 fi
 
 # ============================================================
+# PHASE 3.5: Collect decisions from all work logs
+# ============================================================
+DECISIONS_DIR="$PROJECT_DIR/docs/decisions"
+mkdir -p "$DECISIONS_DIR"
+DECISIONS_FILE="$DECISIONS_DIR/$(date +%Y-%m-%d).md"
+DECISIONS_FOUND=false
+
+for sess in "${SESSIONS[@]}"; do
+  SUBLOG="/tmp/worklog-${sess}.md"
+  if [[ -f "$SUBLOG" ]]; then
+    # Extract decision blocks (### Decision: ... until next ###)
+    DECISIONS=$(awk '/^### Decision:/,/^### [^D]|^## /' "$SUBLOG" | head -100)
+    if [[ -n "$DECISIONS" ]]; then
+      if [[ "$DECISIONS_FOUND" == "false" ]]; then
+        echo "# Decisions — $(date +%Y-%m-%d)" > "$DECISIONS_FILE"
+        echo "" >> "$DECISIONS_FILE"
+        DECISIONS_FOUND=true
+      fi
+      echo "## From: $sess" >> "$DECISIONS_FILE"
+      echo "$DECISIONS" >> "$DECISIONS_FILE"
+      echo "" >> "$DECISIONS_FILE"
+    fi
+  fi
+done
+
+if [[ "$DECISIONS_FOUND" == "true" ]]; then
+  echo "[integration] Decisions collected to $DECISIONS_FILE"
+  cd "$PROJECT_DIR" && git add docs/decisions/ 2>/dev/null || true
+else
+  echo "[integration] No decisions logged by agents"
+fi
+
+# ============================================================
 # PHASE 4: Persist integration log to project history
 # ============================================================
 HISTORY_DIR="$PROJECT_DIR/docs/history"
