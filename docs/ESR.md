@@ -1,5 +1,5 @@
 # SwarmV3 — Executive Summary Report (ESR)
-*Last updated: 2026-03-28 11:23*
+*Last updated: 2026-03-28 11:26*
 
 ## What We've Built
 <!-- High-level summary of what exists -->
@@ -55,3 +55,8 @@ Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indi
 ### Update: 2026-03-28 11:23
 ### claude-swarm-maxconcurrent — 2026-03-28 11:23
 Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+### Update: 2026-03-28 11:26
+### Integration Review — 2026-03-28 11:26
+**Subteams:** claude-swarm-statemachine claude-swarm-maxconcurrent
+**Result:** Both branches merged cleanly with no conflicts. No cross-team issues: statemachine (update-task-status, notify-on-complete, pulse-check) and maxconcurrent (spawn-batch, queue-watcher, integration-watcher) modify disjoint files. All 17 scripts pass bash -n. Session naming conventions are consistent across both subteams. State machine transitions are guarded with [[ -x ]] so they degrade gracefully.

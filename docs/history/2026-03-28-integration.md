@@ -215,3 +215,163 @@
 - **Build verified:** pass — `bash -n` on all 8 modified scripts (spawn-agent.sh, notify-on-complete.sh, pulse-check.sh, integration-watcher.sh, inbox-add.sh, inbox-list.sh, inbox-clear.sh)
 - **Fixes applied:** 1) Resolved merge conflict in spawn-agent.sh: kept decisions template block, used handoff wording. 2) Fixed "WHEN YOU ARE DONE" step 1 reference from "summary section" to "handoff section" (stale reference from escalation branch which was based on pre-handoff main).
 - **Remaining concerns:** None — all five branches cleanly integrated, all scripts pass syntax check, cross-references (notify-on-complete.sh sed, integration-watcher.sh awk) verified consistent.
+
+---
+
+# Integration Log: Swarm v3 Phase 2 — Core Infrastructure
+**Project:** SwarmV3
+**Subteams:** claude-swarm-statemachine claude-swarm-maxconcurrent
+**Started:** 2026-03-28 11:24:19
+
+## Subteam Summaries
+
+
+========================================
+## Subteam: claude-swarm-statemachine
+========================================
+# Work Log: claude-swarm-statemachine
+## Task: swarm-statemachine (SwarmV3)
+## Branch: feat/swarm-statemachine
+---
+
+### [Step 1] Created update-task-status.sh
+- **Files changed:** scripts/update-task-status.sh (new)
+- **What:** Helper script to update task status in active-tasks.json. Supports lookup by task-id or --session <tmux-session>. Uses flock on active-tasks.json.lock for race safety. Adds timestamps per status (reviewStartedAt, completedAt, failedAt+failReason). Non-fatal exit 0 if task not found.
+- **Why:** Core building block needed by all other scripts.
+- **Decisions:** Used env-var passing to python3 heredoc (single-quoted PYEOF) to avoid bash/python variable expansion conflicts.
+- **Issues found:** None.
+
+### [Step 2] Created migrate-orphaned-tasks.sh
+- **Files changed:** scripts/migrate-orphaned-tasks.sh (new)
+- **What:** One-time migration that scans running tasks and marks any whose tmux session is gone as "done" with migratedAt timestamp.
+- **Why:** Fix historical data — existing tasks stuck as "running" after sessions ended.
+- **Decisions:** Marks as "done" (not "failed") for orphaned tasks — more semantically accurate since they completed, just without tracking.
+- **Issues found:** None.
+
+### [Step 3] Modified notify-on-complete.sh
+- **Files changed:** scripts/notify-on-complete.sh (modified)
+- **What:** Added 4 status transition calls:
+  1. After builder finishes (line ~162): running → review
+  2. In no-review early exit: running → done
+  3. After auto-infer review pass (covers all 3 sub-paths with one insertion): review → done
+  4. After verdict-file review pass: review → done
+  5. After max review loops: review → failed
+- **Why:** Complete the status machine for the main review pipeline.
+- **Decisions:** Added review→done in two places (auto-infer and verdict-file paths) to cover both code paths. All wrapped in [[ -x ]] && ... 2>/dev/null || true.
+- **Issues found:** None.
+
+### [Step 4] Modified pulse-check.sh
+- **Files changed:** scripts/pulse-check.sh (modified)
+- **What:** Added status updates after kill: functional_done → done, stuck → failed with reason string.
+- **Why:** Complete the state machine for externally-detected completion/failure.
+- **Issues found:** None.
+
+### Decision: flock via fd 200 subshell pattern
+- **Choice:** `( flock -x 200; ... ) 200>"$LOCK_FILE"` with env-var passing to python3
+- **Why:** Standard bash flock pattern; env vars + single-quoted heredoc avoids bash/python variable clash
+- **Alternatives considered:** Passing JSON as argv[1] (too large, quoting issues); writing python to temp file (extra cleanup needed)
+- **Impact:** Safe for parallel agent scenarios; lock file is .json.lock alongside the data file
+
+## Handoff
+- **What changed:**
+  - scripts/update-task-status.sh (NEW): status update helper with flock, two lookup modes (id / --session)
+  - scripts/migrate-orphaned-tasks.sh (NEW): one-time migration for orphaned "running" tasks
+  - scripts/notify-on-complete.sh (MODIFIED): 5 status update calls across 4 lifecycle points
+  - scripts/pulse-check.sh (MODIFIED): 2 status update calls (done on functional_done, failed on stuck)
+- **How to verify:**
+  - `bash -n scripts/update-task-status.sh` → OK
+  - `bash -n scripts/migrate-orphaned-tasks.sh` → OK
+  - `bash -n scripts/notify-on-complete.sh` → OK
+  - `bash -n scripts/pulse-check.sh` → OK
+  - Live test: spawn a task, observe status in active-tasks.json transitions from running → review → done
+  - One-time: run `scripts/migrate-orphaned-tasks.sh` to fix existing orphaned tasks
+- **Known issues:** No remote configured, so push/PR skipped (local-only repo).
+- **Integration notes:** update-task-status.sh must be deployed alongside notify-on-complete.sh and pulse-check.sh. The script reads SWARM_DIR relative to its own location, so it works correctly whether called from notify-on-complete.sh or pulse-check.sh.
+- **Decisions made:** Used --session lookup (by tmuxSession field) in notify-on-complete.sh and pulse-check.sh since those scripts only have the tmux session name, not the raw task-id.
+- **Build status:** Pass — all 4 scripts pass `bash -n`. Committed as 0bbf367.
+
+### Review Round 1
+- Verdict: Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+========================================
+## Subteam: claude-swarm-maxconcurrent
+========================================
+# Work Log: claude-swarm-maxconcurrent
+## Task: swarm-maxconcurrent (SwarmV3)
+## Branch: feat/swarm-maxconcurrent
+---
+
+### [Step 1] Read existing scripts
+- **Files changed:** None
+- **What:** Read swarm.conf, spawn-batch.sh, spawn-agent.sh, integration-watcher.sh
+- **Why:** Understand current state before modifying
+- **Decisions:** Session names are ${AGENT}-${TASK_ID} (deterministic). integration-watcher uses tmux session existence check in all_done() — non-existent sessions considered "done", so queued sessions can't be pre-passed.
+- **Issues found:** integration-watcher.sh has MAX_PARALLEL=10 hardcoded limit that would block large batches.
+
+### Decision: Queue-watcher starts integration-watcher (not spawn-batch)
+- **Choice:** queue-watcher.sh is responsible for starting integration-watcher once queue is drained
+- **Why:** integration-watcher.all_done() considers non-existent tmux sessions as "done". If we pass queued session names to integration-watcher before those sessions are spawned, it would proceed to integration phase prematurely.
+- **Alternatives considered:** (A) Pre-create placeholder tmux sessions — too complex and fragile. (B) Modify integration-watcher to wait for sessions to appear — requires significant rewrite. (C) Have spawn-batch start integration-watcher with all sessions — breaks because of "already done" false positive.
+- **Impact:** queue-watcher.sh owns the integration-watcher lifecycle for overflow batches. No-overflow batches unchanged.
+
+### [Step 2] Modified swarm.conf
+- **Files changed:** scripts/swarm.conf
+- **What:** Added SWARM_MAX_CONCURRENT=8
+- **Why:** Config-driven concurrent agent limit
+
+### [Step 3] Rewrote spawn-batch.sh
+- **Files changed:** scripts/spawn-batch.sh
+- **What:** Source swarm.conf → MAX_PARALLEL. Remove MAX_PARALLEL error check. Split tasks into INITIAL_BATCH + QUEUED. Spawn initial batch. Write queue file + start queue-watcher for overflow. Start integration-watcher directly for no-overflow case (identical to original).
+- **Why:** Config-driven limit with auto-queue overflow
+- **Decisions:** No-overflow path is byte-for-byte identical to original behavior. Queue path writes queue-${BATCH_ID}.json with allSessions (pre-computed) + pending tasks.
+
+### [Step 4] Created queue-watcher.sh
+- **Files changed:** scripts/queue-watcher.sh (new)
+- **What:** Polls every 60s, counts active tmux sessions, spawns next queued task when slot opens. When queue empty, starts integration-watcher with allSessions. 4-hour timeout.
+- **Why:** Auto-spawn overflow tasks as slots free up
+
+### [Step 5] Fixed integration-watcher.sh limit
+- **Files changed:** scripts/integration-watcher.sh
+- **What:** Changed MAX_PARALLEL=10 to MAX_SESSIONS=50 with updated error message
+- **Why:** Need to support total sessions > 10 for overflow batches (e.g. 8 concurrent but 20 total tasks)
+
+### [Step 6] Validated all scripts
+- **Files changed:** None
+- **What:** bash -n on all 15 .sh scripts in scripts/
+- **Build status:** All pass
+
+## Handoff
+- **What changed:**
+  - `scripts/swarm.conf` — Added `SWARM_MAX_CONCURRENT=8` (new config key for concurrent agent limit)
+  - `scripts/spawn-batch.sh` — Sources swarm.conf; uses SWARM_MAX_CONCURRENT as MAX_PARALLEL (default 8); removed "too many tasks" error; splits tasks into initial batch + overflow queue; starts queue-watcher.sh when overflow exists; no-overflow path is byte-for-byte identical to original
+  - `scripts/queue-watcher.sh` — New script: polls tmux every 60s, spawns next queued task when slot opens (active < MAX_CONCURRENT), starts integration-watcher once all tasks are spawned, 4-hour timeout
+  - `scripts/integration-watcher.sh` — Changed MAX_PARALLEL=10 to MAX_SESSIONS=50 to support large batch totals
+- **How to verify:**
+  - `bash -n scripts/*.sh` — all pass (15 scripts)
+  - Test no-overflow: create tasks.json with ≤8 tasks, run spawn-batch.sh — behavior identical to before
+  - Test overflow: create tasks.json with >8 tasks, run spawn-batch.sh — should spawn 8, write queue-${BATCH_ID}.json, start queue-watcher in background
+  - Test queue-watcher: `scripts/queue-watcher.sh queue-batch-xyz.json` with a populated queue file
+- **Known issues:** No remote configured on this repo — could not push or create PR
+- **Integration notes:**
+  - SWARM_MAX_CONCURRENT is now the single source of truth for concurrency — update swarm.conf to change the limit
+  - queue-watcher.sh starts integration-watcher (not spawn-batch.sh) for overflow batches
+  - integration-watcher.sh MAX_SESSIONS raised from 10 to 50; if you need >50 total sessions, update that constant
+  - Batch metadata JSON now includes `queueFile` key for overflow batches (instead of `integrationWatcher`)
+- **Decisions made:**
+  - queue-watcher starts integration-watcher: because integration-watcher.all_done() considers non-existent tmux sessions as "done" — passing future session names would cause premature integration
+  - allSessions pre-populated in queue file: both initial and queued session names written at spawn-batch time, so queue-watcher can pass them all to integration-watcher without tracking state
+- **Build status:** pass — `bash -n scripts/*.sh` all 15 scripts clean
+
+### Review Round 1
+- Verdict: Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+---
+## Integration Review
+
+### Integration Round 1
+- **Timestamp:** 2026-03-28 11:24:25
+- **Cross-team conflicts found:** None — the two branches (statemachine and maxconcurrent) modify disjoint script files. Only docs/ESR.md and history files overlapped (auto-merged cleanly).
+- **Duplicated code merged:** None — no duplicate logic detected. Both branches use the same SWARM_DIR pattern and swarm.conf sourcing but for different purposes.
+- **Build verified:** pass — all 17 scripts pass `bash -n` syntax check after merge.
+- **Fixes applied:** None needed — both branches merged cleanly with no conflicts.
+- **Remaining concerns:** (1) queue-watcher counts ALL tmux agent sessions system-wide, not just current batch — correct for total load management but could slow queue draining if concurrent batches exist. (2) update-task-status.sh is guarded by `[[ -x ]]` checks so it degrades gracefully if absent. (3) queue-watcher does not call update-task-status.sh for queued tasks transitioning to "running" — tasks spawned from the queue will get their status set by spawn-agent.sh's existing active-tasks.json write, so this is fine.
