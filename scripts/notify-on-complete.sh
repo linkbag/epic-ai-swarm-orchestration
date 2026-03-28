@@ -156,6 +156,10 @@ done
 
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 echo "[watcher] Builder finished at $TIMESTAMP"
+# Update task status: running → review
+if [[ -x "$SWARM_DIR/update-task-status.sh" ]]; then
+  "$SWARM_DIR/update-task-status.sh" --session "$BASE_SESSION" "review" 2>/dev/null || true
+fi
 # NOTE: Do NOT write to pending-notifications.txt here.
 # The review pass (or no-review completion below) is the meaningful milestone.
 # Writing here causes duplicate notifications when heartbeat picks up the file.
@@ -176,6 +180,10 @@ fi
 # If no review requested, just notify, persist, and exit
 if [[ -z "$REVIEW_PROJECT" || ! -d "$REVIEW_PROJECT" ]]; then
   send_telegram "✅ $DESCRIPTION"
+  # Update task status: running → done (no review needed)
+  if [[ -x "$SWARM_DIR/update-task-status.sh" ]]; then
+    "$SWARM_DIR/update-task-status.sh" --session "$BASE_SESSION" "done" 2>/dev/null || true
+  fi
   persist_and_update_esr "$DESCRIPTION"
   exit 0
 fi
@@ -319,6 +327,10 @@ WRAPPER_EOF
       send_telegram "✅ $BASE_SESSION review auto-passed (round $LOOP): clean exit, no issues indicated"
     fi
 
+    # Update task status: review → done
+    if [[ -x "$SWARM_DIR/update-task-status.sh" ]]; then
+      "$SWARM_DIR/update-task-status.sh" --session "$BASE_SESSION" "done" 2>/dev/null || true
+    fi
     # NOTE: send_telegram() already handles fallback to NOTIFY_FILE on failure.
     # Do NOT write to NOTIFY_FILE here — causes duplicate notifications.
     echo "" >> "$WORKLOG"
@@ -341,6 +353,10 @@ WRAPPER_EOF
 
   if [[ "$PASS" == "True" ]]; then
     send_telegram "✅ $BASE_SESSION review passed (round $LOOP): $SUMMARY"
+    # Update task status: review → done
+    if [[ -x "$SWARM_DIR/update-task-status.sh" ]]; then
+      "$SWARM_DIR/update-task-status.sh" --session "$BASE_SESSION" "done" 2>/dev/null || true
+    fi
     # NOTE: send_telegram() already handles fallback to NOTIFY_FILE on failure.
     # Trigger CI/CD build notification
     if [ -n "$REVIEW_PROJECT" ]; then
@@ -359,6 +375,10 @@ done
 
 if [[ "$PASS" != "True" ]]; then
   send_telegram "⚠️ $BASE_SESSION hit max review loops ($MAX_LOOPS). Remaining: $REMAINING"
+  # Update task status: review → failed
+  if [[ -x "$SWARM_DIR/update-task-status.sh" ]]; then
+    "$SWARM_DIR/update-task-status.sh" --session "$BASE_SESSION" "failed" "Max review loops reached: $REMAINING" 2>/dev/null || true
+  fi
   echo "" >> "$WORKLOG"
   echo "### ⚠️ Max Loops Reached" >> "$WORKLOG"
   echo "- Unresolved: $REMAINING" >> "$WORKLOG"
