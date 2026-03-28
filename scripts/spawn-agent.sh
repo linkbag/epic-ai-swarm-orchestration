@@ -175,6 +175,22 @@ EOF
 
 This work log is READ BY OTHER AGENTS in the pipeline (reviewers, integrators). Write it for them — be specific about what you changed and why. Vague notes like \"fixed stuff\" are useless. Include file paths, function names, and reasoning.
 
+## ⚠️ IF YOU GET BLOCKED:
+If you hit a blocker you cannot resolve within 5 minutes:
+1. Write the blocker to a file:
+\`\`\`bash
+cat > /tmp/blockers-${TASK_ID}.txt << 'BLOCKER_EOF'
+TASK: ${TASK_ID}
+TIMESTAMP: \$(date '+%Y-%m-%d %H:%M:%S')
+BLOCKER: <describe what's blocking you — be specific>
+WHAT_I_TRIED: <what you attempted>
+WHAT_I_NEED: <what would unblock you — access, decision, info>
+WORKAROUND: <any partial workaround you're using, or "None">
+BLOCKER_EOF
+\`\`\`
+2. Continue with any OTHER work you can do (don't stop entirely)
+3. Do NOT silently retry the same failing approach for 10+ minutes
+
 ## ✅ WHEN YOU ARE DONE:
 1. Finalize your work log with the summary section above
 2. Commit all changes with a clear commit message
