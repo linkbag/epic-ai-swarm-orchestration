@@ -135,6 +135,24 @@ with open('$PULSE_STATE', 'w') as f: json.dump(d, f, indent=2)
   fi
 done
 
+# Check for blocker files from agents
+echo "---"
+echo "Checking for agent blockers..."
+BLOCKER_FILES=$(ls /tmp/blockers-*.txt 2>/dev/null || true)
+if [[ -n "$BLOCKER_FILES" ]]; then
+  for BFILE in $BLOCKER_FILES; do
+    TASK_FROM_FILE=$(grep "^TASK:" "$BFILE" | cut -d: -f2- | xargs)
+    BLOCKER_DESC=$(grep "^BLOCKER:" "$BFILE" | cut -d: -f2- | xargs)
+    WHAT_NEEDED=$(grep "^WHAT_I_NEED:" "$BFILE" | cut -d: -f2- | xargs)
+    echo "🚧 Blocker: $TASK_FROM_FILE — $BLOCKER_DESC (needs: $WHAT_NEEDED)"
+    echo "🚧 Agent $TASK_FROM_FILE is BLOCKED: $BLOCKER_DESC — Needs: $WHAT_NEEDED" >> "$NOTIFY_FILE"
+    # Move processed blocker to prevent re-notification
+    mv "$BFILE" "${BFILE%.txt}.processed" 2>/dev/null || true
+  done
+else
+  echo "No blockers reported."
+fi
+
 # Also check for completed agents (notifications waiting)
 if [[ -s "$NOTIFY_FILE" ]]; then
   echo "---"
