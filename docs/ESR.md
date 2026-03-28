@@ -1,5 +1,5 @@
 # SwarmV3 — Executive Summary Report (ESR)
-*Last updated: 2026-03-28 10:51*
+*Last updated: 2026-03-28 10:55*
 
 ## What We've Built
 <!-- High-level summary of what exists -->
@@ -38,3 +38,8 @@ Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indi
 ### Update: 2026-03-28 10:51
 ### claude-swarm-inbox — 2026-03-28 10:51
 Review passed — reviewer exited cleanly (auto-pass: clean exit, no issues indicated)
+
+### Update: 2026-03-28 10:55
+### Integration Review — 2026-03-28 10:55
+**Subteams:** claude-swarm-handoff claude-swarm-inbox claude-swarm-escalation claude-swarm-decisions claude-swarm-planformat
+**Result:** All 5 branches merged. One merge conflict in spawn-agent.sh (handoff vs decisions) resolved — kept both decision template and handoff format. Fixed stale summary->handoff reference. All 8 scripts pass bash -n syntax check. No remaining issues.
