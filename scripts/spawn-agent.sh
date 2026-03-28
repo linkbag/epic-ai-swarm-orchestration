@@ -160,20 +160,21 @@ cat >> ${WORKLOG} << 'EOF'
 EOF
 \`\`\`
 
-**At the END**, append a summary:
+**At the END**, append a structured handoff:
 \`\`\`bash
 cat >> ${WORKLOG} << 'EOF'
 
-## Summary
-- **Total files changed:** N
-- **Key changes:** bullet list of what was built/fixed
-- **Build status:** pass/fail
-- **Known issues:** any remaining concerns
-- **Integration notes:** what the next agent (reviewer/integrator) should know
+## Handoff
+- **What changed:** <list each file with a one-line description of the change>
+- **How to verify:** <exact test commands or manual verification steps>
+- **Known issues:** <anything incomplete, risky, or that needs follow-up>
+- **Integration notes:** <what other agents or the integrator should watch for — shared state, API changes, config changes>
+- **Decisions made:** <any architectural choices with brief reasoning — e.g. "Used WorkManager over AlarmManager because X">
+- **Build status:** <pass/fail + command used to verify>
 EOF
 \`\`\`
 
-This work log is READ BY OTHER AGENTS in the pipeline (reviewers, integrators). Write it for them — be specific about what you changed and why. Vague notes like \"fixed stuff\" are useless. Include file paths, function names, and reasoning.
+The Handoff section is structured so reviewers and integrators can quickly understand what changed, how to verify it, and any risks. Fill in every field — 'None' is acceptable, blank is not.
 
 ## ✅ WHEN YOU ARE DONE:
 1. Finalize your work log with the summary section above

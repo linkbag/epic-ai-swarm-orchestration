@@ -218,6 +218,7 @@ $WORKLOG_CONTENT
 The work log above tells you what the builder changed and why. Use it to focus your review — you know exactly which files were touched, what decisions were made, and what the builder flagged as concerns.
 
 ### STEP 1: Review
+Start by reading the **Handoff** section of the work log for a structured summary of changes, verification steps, and known issues.
 Start by understanding the scope from the work log, then verify with git:
   git log --oneline -5
   git diff HEAD~1 --stat
@@ -377,7 +378,7 @@ persist_and_update_esr "$SUMMARY"
 SHIPPED_SUMMARY=""
 if [[ -f "$WORKLOG" ]]; then
   # Extract the Summary section from work log (bullet points of what changed)
-  SHIPPED_SUMMARY=$(sed -n '/^## Summary/,/^## /p' "$WORKLOG" 2>/dev/null | head -20 | grep -E '^\s*-' | head -6)
+  SHIPPED_SUMMARY=$(sed -n '/^## Handoff/,/^## /p' "$WORKLOG" 2>/dev/null | head -20 | grep -E '^\s*-' | head -6)
 fi
 
 if [[ -n "$SHIPPED_SUMMARY" ]]; then
