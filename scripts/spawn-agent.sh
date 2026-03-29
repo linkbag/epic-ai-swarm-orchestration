@@ -181,7 +181,7 @@ cat >> ${WORKLOG} << 'EOF'
 - **How to verify:** <exact test commands or manual verification steps>
 - **Known issues:** <anything incomplete, risky, or that needs follow-up>
 - **Integration notes:** <what other agents or the integrator should watch for — shared state, API changes, config changes>
-- **Decisions made:** <any architectural choices with brief reasoning — e.g. "Used WorkManager over AlarmManager because X">
+- **Decisions made:** <any architectural choices with brief reasoning — e.g. 'Used WorkManager over AlarmManager because X'>
 - **Build status:** <pass/fail + command used to verify>
 EOF
 \`\`\`

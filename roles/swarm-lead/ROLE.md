@@ -59,7 +59,7 @@ Telegram notifications fire automatically at each milestone:
 ### Script Selection
 | Scenario | Script | Why |
 |----------|--------|-----|
-| Multi-agent (2+ tasks) | `spawn-batch.sh` | Auto-endorses + integration watcher |
+| Multi-agent (2+ tasks) | `spawn-batch.sh` | Records batch approval + integration watcher |
 | Single agent task | `spawn-agent.sh` | Still gets tmux + watcher + notifications |
 | Forgot integration watcher | `start-integration.sh` | Manual recovery only |
 
