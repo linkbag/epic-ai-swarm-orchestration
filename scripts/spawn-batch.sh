@@ -94,7 +94,7 @@ for line in "${INITIAL_BATCH[@]}"; do
   # so spawn-agent.sh's endorsement check passes. NOT a bypass of human approval.
   ENDORSE_FILE="$SWARM_DIR/endorsements/${TASK_ID}.endorsed"
   if [[ ! -f "$ENDORSE_FILE" ]]; then
-    "$ENDORSE_SCRIPT" "$TASK_ID" >/dev/null
+    "$ENDORSE_SCRIPT" --batch "$TASK_ID" >/dev/null
   fi
 
   if [[ -n "$MODEL" ]]; then

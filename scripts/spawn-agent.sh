@@ -51,6 +51,37 @@ if [[ ! -f "$ENDORSE_FILE" ]]; then
   echo ""
   exit 1
 fi
+
+# ============================================================
+# COOLDOWN CHECK — Prevent endorse+spawn in same turn
+# ============================================================
+# If endorsement was NOT created by spawn-batch.sh (--batch flag),
+# require at least 30 seconds between endorsement and spawn.
+# This forces the orchestrator to present the plan, wait for human
+# approval, and THEN spawn in a separate turn.
+IS_BATCH=$(grep -oP '(?<=Batch: ).*' "$ENDORSE_FILE" 2>/dev/null || echo "false")
+ENDORSE_EPOCH=$(grep -oP '(?<=Endorsed_Epoch: )\d+' "$ENDORSE_FILE" 2>/dev/null || echo "0")
+NOW_EPOCH=$(date +%s)
+COOLDOWN=30
+
+if [[ "$IS_BATCH" != "true" && "$ENDORSE_EPOCH" -gt 0 ]]; then
+  ELAPSED=$(( NOW_EPOCH - ENDORSE_EPOCH ))
+  if [[ $ELAPSED -lt $COOLDOWN ]]; then
+    echo ""
+    echo "⛔ COOLDOWN: Endorsement is only ${ELAPSED}s old (minimum ${COOLDOWN}s)."
+    echo ""
+    echo "   You endorsed and tried to spawn in the same turn."
+    echo "   The swarm protocol requires:"
+    echo "   1. Present plan to WB"
+    echo "   2. WAIT for WB's approval"
+    echo "   3. THEN spawn (in a separate turn)"
+    echo ""
+    echo "   Wait $(( COOLDOWN - ELAPSED ))s or use spawn-batch.sh for batch work."
+    echo ""
+    exit 1
+  fi
+fi
+
 echo "✅ Endorsement verified: $ENDORSE_FILE"
 
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
