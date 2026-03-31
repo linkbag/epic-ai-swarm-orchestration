@@ -55,27 +55,33 @@ send_telegram() {
 
 check_stuck() {
   local sess="$1"
-  CURRENT=$(tmux capture-pane -t "$sess" -p 2>/dev/null | tail -5 || echo "")
-  if echo "$CURRENT" | grep -qi "Failed to login\|API key must be set\|How would you like to authenticate\|Permission denied\|rate limit\|429\|quota\|token limit\|exceeded.*limit\|capacity.*exceeded"; then
+  CURRENT=$(tmux capture-pane -t "$sess" -p 2>/dev/null | tail -10 || echo "")
+  if echo "$CURRENT" | grep -qi "Failed to login\|API key must be set\|How would you like to authenticate\|Permission denied"; then
     TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-
-    # Detect token/quota limit → trigger fallback to Claude-heavy duty table
-    if echo "$CURRENT" | grep -qi "rate limit\|429\|quota\|token limit\|exceeded.*limit\|capacity.*exceeded"; then
-      MSG="⚠️ [$TIMESTAMP] Agent $sess hit TOKEN/QUOTA LIMIT — killing + triggering fallback"
-      send_telegram "$MSG"
-      echo "$MSG" >> "$NOTIFY_FILE"
-      tmux kill-session -t "$sess" 2>/dev/null || true
-      # Trigger fallback duty table
-      "$SWARM_DIR/assess-models.sh" --fallback 2>/dev/null || true
-      return 0
-    fi
-
-    MSG="⚠️ [$TIMESTAMP] Agent $sess appears STUCK — killing it"
+    MSG="⚠️ [$TIMESTAMP] Agent $sess appears STUCK (auth issue) — killing it"
     send_telegram "$MSG"
     echo "$MSG" >> "$NOTIFY_FILE"
     tmux kill-session -t "$sess" 2>/dev/null || true
     return 0
   fi
+
+  # Token/rate limit errors: the runner script now handles these internally
+  # with auto-retry + fallback. If we see "[runner] 🔄 Switching to" in the
+  # output, the retry mechanism is active — do NOT kill.
+  if echo "$CURRENT" | grep -qi "rate.limit\|429\|quota\|token.limit\|exceeded.*limit\|capacity.*exceeded"; then
+    if echo "$CURRENT" | grep -q "\[runner\].*Switching to\|\[runner\].*Starting"; then
+      echo "[watcher] Token limit detected but runner is handling fallback — not killing"
+      return 1
+    fi
+    # Runner didn't catch it (old-style run or runner crashed) — kill + notify
+    TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+    MSG="⚠️ [$TIMESTAMP] Agent $sess hit TOKEN/QUOTA LIMIT and runner didn't auto-recover — killing"
+    send_telegram "$MSG"
+    echo "$MSG" >> "$NOTIFY_FILE"
+    tmux kill-session -t "$sess" 2>/dev/null || true
+    return 0
+  fi
+
   return 1
 }
 

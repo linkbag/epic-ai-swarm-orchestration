@@ -6,9 +6,11 @@
 #
 # tasks-json format:
 # [
-#   {"id":"task-1","description":"...","agent":"codex","model":"gpt-5.3-codex","reasoning":"high"},
-#   {"id":"task-2","description":"..."}
+#   {"id":"task-1","description":"...","role":"builder","reasoning":"high"},
+#   {"id":"task-2","description":"...","role":"architect"}
 # ]
+# Role-based: set "role" to architect|builder|reviewer|integrator → resolved from duty-table.json
+# Direct override: set "agent"+"model" to bypass duty table (e.g. "agent":"claude","model":"claude-sonnet-4-6")
 #
 # Notes:
 # - Preserves existing swarm logging: per-subteam work logs + ESR logs remain unchanged.
@@ -45,11 +47,22 @@ if [[ ! -x "$SPAWN_AGENT" || ! -x "$INTEGRATION_WATCHER" ]]; then
   exit 1
 fi
 
-mapfile -t TASK_LINES < <(python3 - <<'PY' "$TASKS_JSON"
+mapfile -t TASK_LINES < <(python3 - <<'PY' "$TASKS_JSON" "$SWARM_DIR/duty-table.json"
 import json,sys
 p=sys.argv[1]
+duty_path=sys.argv[2]
+
 with open(p,'r',encoding='utf-8') as f:
     data=json.load(f)
+
+# Load duty table for role resolution
+duty_table={}
+try:
+    with open(duty_path) as f:
+        duty_table=json.load(f).get('dutyTable',{})
+except:
+    pass
+
 if not isinstance(data,list):
     raise SystemExit('tasks-json must be a JSON array')
 for t in data:
@@ -59,10 +72,42 @@ for t in data:
     desc=t.get('description','').strip()
     if not tid or not desc:
         raise SystemExit('each task requires id + description')
-    agent=(t.get('agent') or 'claude').strip()
-    model=(t.get('model') or '').strip()
+
+    # Role-based resolution: if 'role' is specified (or 'agent' is a role name),
+    # resolve agent+model from duty table. Direct agent/model override still works.
+    role=t.get('role','').strip()
+    agent=t.get('agent','').strip()
+    model=t.get('model','').strip()
     reasoning=(t.get('reasoning') or 'high').strip()
-    print('\t'.join([tid,desc,agent,model,reasoning]))
+
+    known_roles=['architect','builder','reviewer','integrator']
+
+    # If agent is actually a role name, treat it as a role
+    if agent in known_roles and not role:
+        role=agent
+        agent=''
+
+    # Resolve from duty table if we have a role and no explicit agent override
+    if role and role in duty_table and not agent:
+        entry=duty_table[role]
+        agent=entry.get('agent','claude')
+        if not model:
+            model=entry.get('model','')
+
+    # Default to builder role from duty table if nothing specified
+    if not agent:
+        if 'builder' in duty_table:
+            entry=duty_table['builder']
+            agent=entry.get('agent','claude')
+            if not model:
+                model=entry.get('model','')
+        else:
+            agent='claude'
+
+    # Pass role (or 'builder' default) so spawn-agent.sh can resolve from duty table
+    role_or_agent=role if role else agent
+
+    print('\t'.join([tid,desc,role_or_agent,model,reasoning]))
 PY
 )
 
@@ -87,7 +132,7 @@ else
 fi
 
 for line in "${INITIAL_BATCH[@]}"; do
-  IFS=$'\t' read -r TASK_ID DESCRIPTION AGENT MODEL REASONING <<< "$line"
+  IFS=$'\t' read -r TASK_ID DESCRIPTION ROLE_OR_AGENT MODEL REASONING <<< "$line"
 
   # Create .endorsed file if missing — this records the human's verbal batch approval.
   # The human endorsed the BATCH (said "yes" to the plan); this creates per-task files
@@ -97,13 +142,21 @@ for line in "${INITIAL_BATCH[@]}"; do
     "$ENDORSE_SCRIPT" --batch "$TASK_ID" >/dev/null
   fi
 
-  if [[ -n "$MODEL" ]]; then
-    "$SPAWN_AGENT" "$PROJECT_DIR" "$TASK_ID" "$DESCRIPTION" "$AGENT" "$MODEL" "$REASONING"
-  else
-    "$SPAWN_AGENT" "$PROJECT_DIR" "$TASK_ID" "$DESCRIPTION" "$AGENT" "" "$REASONING"
+  # spawn-agent.sh resolves role→agent from duty table
+  "$SPAWN_AGENT" "$PROJECT_DIR" "$TASK_ID" "$DESCRIPTION" "$ROLE_OR_AGENT" "$MODEL" "$REASONING"
+
+  # Determine the actual tmux session name (spawn-agent uses $AGENT-$TASK_ID)
+  # If role was passed, resolve what agent it mapped to
+  RESOLVED_AGENT="$ROLE_OR_AGENT"
+  if [[ "$ROLE_OR_AGENT" == "architect" || "$ROLE_OR_AGENT" == "builder" || "$ROLE_OR_AGENT" == "reviewer" || "$ROLE_OR_AGENT" == "integrator" ]]; then
+    RESOLVED_AGENT=$(python3 -c "
+import json
+with open('$SWARM_DIR/duty-table.json') as f: d=json.load(f)
+print(d.get('dutyTable',{}).get('$ROLE_OR_AGENT',{}).get('agent','claude'))
+" 2>/dev/null || echo "claude")
   fi
 
-  SESSIONS+=("${AGENT}-${TASK_ID}")
+  SESSIONS+=("${RESOLVED_AGENT}-${TASK_ID}")
 done
 
 if [[ $QUEUED_COUNT -gt 0 ]]; then

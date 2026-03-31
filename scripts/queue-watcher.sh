@@ -14,7 +14,7 @@
 #   "description": "batch description",
 #   "allSessions": ["claude-task-1", ...],   <- pre-populated with ALL session names
 #   "pending": [                              <- tasks not yet spawned
-#     {"id": "task-5", "description": "...", "agent": "claude", "model": "...", "reasoning": "high"}
+#     {"id": "task-5", "description": "...", "role": "builder", "model": "", "reasoning": "high"}
 #   ]
 # }
 
@@ -82,20 +82,17 @@ PY
     )
 
     if [[ -n "$NEXT_TASK" ]]; then
-      IFS=$'\t' read -r TASK_ID DESCRIPTION AGENT MODEL REASONING <<< "$NEXT_TASK"
+      IFS=$'\t' read -r TASK_ID DESCRIPTION ROLE_OR_AGENT MODEL REASONING <<< "$NEXT_TASK"
 
       ENDORSE_FILE="$SWARM_DIR/endorsements/${TASK_ID}.endorsed"
       if [[ ! -f "$ENDORSE_FILE" ]]; then
         "$ENDORSE_SCRIPT" --batch "$TASK_ID" >/dev/null
       fi
 
-      if [[ -n "$MODEL" ]]; then
-        "$SPAWN_AGENT" "$PROJECT_DIR" "$TASK_ID" "$DESCRIPTION" "$AGENT" "$MODEL" "$REASONING"
-      else
-        "$SPAWN_AGENT" "$PROJECT_DIR" "$TASK_ID" "$DESCRIPTION" "$AGENT" "" "$REASONING"
-      fi
+      # Pass role-or-agent to spawn-agent.sh which resolves from duty table
+      "$SPAWN_AGENT" "$PROJECT_DIR" "$TASK_ID" "$DESCRIPTION" "$ROLE_OR_AGENT" "$MODEL" "$REASONING"
 
-      echo "[queue-watcher] ✅ Spawned: ${AGENT}-${TASK_ID} ($((ACTIVE + 1))/$MAX_CONCURRENT active, $((PENDING_COUNT - 1)) remaining)"
+      echo "[queue-watcher] ✅ Spawned: ${ROLE_OR_AGENT}-${TASK_ID} ($((ACTIVE + 1))/$MAX_CONCURRENT active, $((PENDING_COUNT - 1)) remaining)"
     fi
   else
     echo "[queue-watcher] ⏳ Waiting for slot ($ACTIVE/$MAX_CONCURRENT active, $PENDING_COUNT queued)..."

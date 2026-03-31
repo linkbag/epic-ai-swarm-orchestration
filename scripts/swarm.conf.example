@@ -1,0 +1,4 @@
+# AI Swarm — Configuration
+SWARM_NOTIFY_TARGET=""          # Telegram user ID or chat ID
+SWARM_NOTIFY_CHANNEL="telegram" # Notification channel
+SWARM_MAX_CONCURRENT=8          # Max parallel agents
