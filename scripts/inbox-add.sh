@@ -5,8 +5,8 @@
 #   priority: high | medium | low (default: medium)
 #
 # Examples:
-#   inbox-add.sh "/mnt/d/Startup projects/LinguaLens" ll-fix-rotate "Fix screen rotation crash" high
-#   inbox-add.sh "/mnt/d/Startup projects/GradChoice" gc-export "Add CSV export button"
+#   inbox-add.sh "/path/to/your/project" ll-fix-rotate "Fix screen rotation crash" high
+#   inbox-add.sh "/path/to/your/project" gc-export "Add CSV export button"
 
 set -euo pipefail
 

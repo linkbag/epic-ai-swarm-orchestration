@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Usage: deploy-notify.sh <project-dir> <commit-hash>
 # Polls GitHub Actions for build result and sends Telegram notification
 

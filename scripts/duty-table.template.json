@@ -1,0 +1,193 @@
+{
+  "assessedAt": "2026-04-04T06:01:25.156899-07:00",
+  "nextAssessment": "2026-04-04T12:01:25.156899-07:00",
+  "availableAgents": {
+    "claude": {
+      "cli": "claude",
+      "auth": "oauth",
+      "status": "active",
+      "models": {
+        "claude-opus-4-6": {
+          "status": "available",
+          "tier": "top",
+          "testedAt": "2026-03-09"
+        },
+        "claude-sonnet-4-6": {
+          "status": "available",
+          "tier": "mid",
+          "testedAt": "2026-03-09"
+        }
+      }
+    },
+    "codex": {
+      "cli": "codex",
+      "auth": "oauth",
+      "status": "limited",
+      "models": {
+        "gpt-5.3-codex": {
+          "status": "available",
+          "tier": "top",
+          "testedAt": "2026-03-22",
+          "note": "stdout is not a terminal \u2014 cannot run in tmux pipe mode"
+        }
+      },
+      "note": "Requires TTY - incompatible with tmux pipe runner. Use claude or gemini for builder role."
+    },
+    "gemini": {
+      "cli": "gemini",
+      "auth": "oauth",
+      "status": "active",
+      "models": {
+        "gemini-3-flash-preview": {
+          "status": "available",
+          "tier": "mid",
+          "testedAt": "2026-03-09"
+        },
+        "gemini-2.5-pro": {
+          "status": "available",
+          "tier": "top",
+          "testedAt": "2026-03-09"
+        },
+        "gemini-2.5-flash": {
+          "status": "available",
+          "tier": "mid",
+          "testedAt": "2026-03-09"
+        }
+      }
+    }
+  },
+  "dutyTable": {
+    "architect": {
+      "agent": "claude",
+      "model": "claude-opus-4-6",
+      "reason": "architect role (auto-assessed)",
+      "nonInteractiveCmd": "claude --model claude-opus-4-6 --permission-mode bypassPermissions --print"
+    },
+    "builder": {
+      "agent": "claude",
+      "model": "claude-sonnet-4-6",
+      "reason": "WB override: Codex requires TTY, incompatible with tmux runner. Pinned to Claude Sonnet.",
+      "nonInteractiveCmd": "claude --model claude-sonnet-4-6 --permission-mode bypassPermissions --print",
+      "pinned": true
+    },
+    "reviewer": {
+      "agent": "gemini",
+      "model": "gemini-2.5-flash",
+      "reason": "reviewer role (auto-assessed)",
+      "nonInteractiveCmd": "gemini -m gemini-2.5-flash -p"
+    },
+    "integrator": {
+      "agent": "claude",
+      "model": "claude-opus-4-6",
+      "reason": "integrator role (auto-assessed)",
+      "nonInteractiveCmd": "claude --model claude-opus-4-6 --permission-mode bypassPermissions --print"
+    }
+  },
+  "history": [
+    {
+      "date": "2026-03-28",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-03-28",
+      "changes": "WB approved: Builder role reassigned from Codex to Claude Sonnet. Codex remains benched (model errors).",
+      "dutyAssignments": "architect=claude/opus-4-6, builder=claude/sonnet-4-6, reviewer=gemini/2.5-flash, integrator=claude/opus-4-6"
+    },
+    {
+      "date": "2026-03-28",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-03-28",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-03-30",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-03-31",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-03-31 11:13",
+      "changes": "Codex benched: stdout-not-a-terminal in tmux. Builder \u2192 Claude Sonnet.",
+      "dutyAssignments": "builder=claude/claude-sonnet-4-6"
+    },
+    {
+      "date": "2026-04-01",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-01",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-01",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-01",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-02",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-02 07:59 PDT",
+      "changes": "WB requested: switch builder role from Codex to Claude Sonnet for the duty table.",
+      "dutyAssignments": "builder=claude/claude-sonnet-4-6"
+    },
+    {
+      "date": "2026-04-02",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-02",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-03",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-03",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-03",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-03",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-04",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    },
+    {
+      "date": "2026-04-04",
+      "changes": "Weekly assessment: claude/claude-sonnet-4-6=available, claude/claude-opus-4-6=available, gemini/gemini-2.5-pro=unavailable, codex/gpt-5.3-codex=available, gemini/gemini-2.5-flash=available",
+      "dutyAssignments": "architect=claude/claude-opus-4-6, builder=codex/gpt-5.3-codex, reviewer=gemini/gemini-2.5-flash, integrator=claude/claude-opus-4-6"
+    }
+  ]
+}
